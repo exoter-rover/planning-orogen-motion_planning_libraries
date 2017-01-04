@@ -3,7 +3,7 @@
 #include "Test.hpp"
 
 #include <stdlib.h>
-#include <time.h> 
+#include <time.h>
 
 #include <envire/core/Environment.hpp>
 #include <envire/maps/TraversabilityGrid.hpp>
@@ -56,9 +56,9 @@ void Test::updateHook()
     } else {
         std::cout << "NEXT CALL UPDATE" << std::endl;
     }
-    
+
     TestBase::updateHook();
-    
+
     createTraversabilityMap();
 
     std::cout << "Write trav map" << std::endl;
@@ -67,7 +67,7 @@ void Test::updateHook()
     emitter_tmp.flush();
 
     // Create and write start and goal pose.
-    createStartGoalState(_traversability_map_width_m.get(), 
+    createStartGoalState(_traversability_map_width_m.get(),
             _traversability_map_height_m.get(), mStart, mGoal);
 
     _start_state.write(mStart);
@@ -96,14 +96,14 @@ void Test::cleanupHook()
 void Test::createTraversabilityMap() {
 
     LOG_INFO("Create traversability map");
-    
-    // Using always the same environment leads to visualization-problems of 
+
+    // Using always the same environment leads to visualization-problems of
     // the map in Vizkit.
     if(mpEnv != NULL) {
         delete mpEnv;
     }
     mpEnv = new envire::Environment();
-    
+
     // Set fix width/length for the parking space
     double ps_x_space = 1;
     double ps_y_space = 2;
@@ -111,32 +111,32 @@ void Test::createTraversabilityMap() {
     int num_ps_y = 3;
     double ps_width = 2; // x
     double ps_height = 3; // y
-      
+
     if(_traversability_map_type.get() == PARKING_SPACE) {
-        _traversability_map_width_m.set(num_ps_x * ps_width + 
+        _traversability_map_width_m.set(num_ps_x * ps_width +
                 (num_ps_x+1) * ps_x_space);
-        _traversability_map_height_m.set(num_ps_y * ps_height + 
+        _traversability_map_height_m.set(num_ps_y * ps_height +
                 (num_ps_y+1) * ps_y_space);
-        std::cout << "Width " << _traversability_map_width_m.get() << " meter, grid " << _traversability_map_width_m.get() / _traversability_map_scalex.get() << 
+        std::cout << "Width " << _traversability_map_width_m.get() << " meter, grid " << _traversability_map_width_m.get() / _traversability_map_scalex.get() <<
                 " Height " << _traversability_map_height_m.get() << " meter, grid " << _traversability_map_height_m.get() / _traversability_map_scaley.get() << std::endl;
     }
-    
+
     envire::TraversabilityGrid* trav = new envire::TraversabilityGrid(
-            (size_t)_traversability_map_width_m.get() / _traversability_map_scalex.get(), 
-            (size_t)_traversability_map_height_m.get() / _traversability_map_scaley.get(), 
-            _traversability_map_scalex.get(), 
+            (size_t)_traversability_map_width_m.get() / _traversability_map_scalex.get(),
+            (size_t)_traversability_map_height_m.get() / _traversability_map_scaley.get(),
+            _traversability_map_scalex.get(),
             _traversability_map_scaley.get());
     mpEnv->attachItem(trav);
     mpTravGrid = trav;
-    
+
     // Have to create a shared_ptr to the real trav data.
     //mpTravData = boost::shared_ptr<TravData>(new TravData(
     //        mpTravGrid->getGridData(envire::TraversabilityGrid::TRAVERSABILITY)));
     // Creates a shared-pointer from the passed reference.
     TravData& travData = mpTravGrid->getGridData(envire::TraversabilityGrid::TRAVERSABILITY);
     mpTravData = boost::shared_ptr<TravData>(&travData, NullDeleter());
-    
-    
+
+
     // Set a random pose of the traversability map.
     mRBSTravGrid = createPose(10, 10, rand(), rand(), rand());
     LOG_INFO("Test: Map position (%4.2f, %4.2f)", mRBSTravGrid.position[0], mRBSTravGrid.position[1]);
@@ -144,22 +144,23 @@ void Test::createTraversabilityMap() {
     mpEnv->getRootNode()->addChild(frame_node);
     trav->setFrameNode(frame_node);
     mpFrameNode = frame_node;
-    
+
     // Defines driveability values.
     trav->setTraversabilityClass(0, envire::TraversabilityClass(0.5)); // unknown
     // class 1 (obstacle) to 10 -> driveability 0.0 to 1.0
-    for(int i=0; i < 10; ++i) {  
+    for(int i=0; i < 10; ++i) {
         trav->setTraversabilityClass(i+1, envire::TraversabilityClass(i/9.0));
+        std::cout << "Setting: " << i+1 << " to TraversabilityClass with " << i/9.0 << std::endl;
     }
-    
+
     // Pass trav grid to helper class.
     mGridCalculations.setTravGrid(trav, mpTravData);
-    
-    int num_cells_x = _traversability_map_width_m.get() / 
+
+    int num_cells_x = _traversability_map_width_m.get() /
             _traversability_map_scalex.get();
-    int num_cells_y = _traversability_map_height_m.get() / 
+    int num_cells_y = _traversability_map_height_m.get() /
             _traversability_map_scaley.get();
-   
+
     switch (_traversability_map_type.get()) {
         case CLEAR: {
             break;
@@ -168,7 +169,7 @@ void Test::createTraversabilityMap() {
             static int num = _number_of_random_circles.get();
             int center_x = 0, center_y = 0, radius = 0;
             int cost_class = 0;
-            // 1/2 obstacles        
+            // 1/2 obstacles
             for(int i=0; i<num/2; ++i) {
                 center_x = rand() % num_cells_x;
                 center_y = rand() % num_cells_y;
@@ -192,8 +193,8 @@ void Test::createTraversabilityMap() {
             int cost_class = 0;
             int width = 0;
             int length = 0;
-            
-            // 1/2 obstacles        
+
+            // 1/2 obstacles
             for(int i=0; i<num/2; ++i) {
                 center_x = rand() % num_cells_x;
                 center_y = rand() % num_cells_y;
@@ -216,26 +217,26 @@ void Test::createTraversabilityMap() {
                 cost_class = rand() % 9 + 2;
                 mGridCalculations.setValue(cost_class);
             }
-            
+
             break;
         }
         case SMALL_OPENING: {
             int length_wall = (num_cells_y - _opening_length.get() / _traversability_map_scaley.get()) / 2.0;
-            drawRectangle(trav, 0, 0, num_cells_x, num_cells_y, 10); // free  
-            drawRectangle(trav, num_cells_x/2, 0,                         10, length_wall, 1); // obstacle    
-            drawRectangle(trav, num_cells_x/2, num_cells_y - length_wall, 10, length_wall, 1); // obstacle 
-            
+            drawRectangle(trav, 0, 0, num_cells_x, num_cells_y, 10); // free
+            drawRectangle(trav, num_cells_x/2, 0,                         10, length_wall, 1); // obstacle
+            drawRectangle(trav, num_cells_x/2, num_cells_y - length_wall, 10, length_wall, 1); // obstacle
+
             // Test grid calculations
             mGridCalculations.setFootprintCircleInGrid(10);
             mGridCalculations.setFootprintPoseInGrid(20, 20, 0);
             mGridCalculations.setValue(1);
-            
+
             mGridCalculations.setFootprintRectangleInGrid(20, 20);
             mGridCalculations.setFootprintPoseInGrid(20, 50, 0);
             mGridCalculations.setValue(1);
             break;
         }
-        
+
         case PARKING_SPACE: {
             mFreeParkingSpaces.clear();
             mGridCalculations.setFootprintRectangleInGrid(ps_width / _traversability_map_scalex.get(),
@@ -270,7 +271,7 @@ void Test::createTraversabilityMap() {
             if(mCounter%2) {
                 // Creates an obstacle on the starting pose.
                 mGridCalculations.setFootprintCircleInGrid(10);
-                mGridCalculations.setFootprintPoseInGrid(10 / _traversability_map_scalex.get(), 
+                mGridCalculations.setFootprintPoseInGrid(10 / _traversability_map_scalex.get(),
                         5 / _traversability_map_scaley.get(), 0);
                 mGridCalculations.setValue(1);
             }
@@ -285,7 +286,7 @@ void Test::createTraversabilityMap() {
 
 void Test::createStartGoalState(int trav_width_m, int trav_height_m, State& start, State& goal) {
     switch (_traversability_map_type.get()) {
-        case SMALL_OPENING: {    
+        case SMALL_OPENING: {
             start.setPose(createPose(trav_width_m, trav_height_m, trav_width_m * 0.35, trav_height_m * 0.25, 180));
             start.mFootprintRadius = _footprint_max.get();
             goal.setPose(createPose (trav_width_m, trav_height_m, trav_width_m * 0.65, trav_height_m * 0.75, 180));
@@ -302,7 +303,7 @@ void Test::createStartGoalState(int trav_width_m, int trav_height_m, State& star
             int goal_x = mFreeParkingSpaces[num_free_parking_space].first;
             int goal_y = mFreeParkingSpaces[num_free_parking_space].second;
             std::cout << "Use parking space " << goal_x << " " << goal_y << std::endl;
-            goal.setPose(createPose (trav_width_m, trav_height_m, goal_x*mpTravGrid->getScaleX(), 
+            goal.setPose(createPose (trav_width_m, trav_height_m, goal_x*mpTravGrid->getScaleX(),
                     goal_y*mpTravGrid->getScaleY(), 90));
             goal.mFootprintRadius = _footprint_max.get();
             break;
@@ -328,15 +329,15 @@ void Test::createStartGoalState(int trav_width_m, int trav_height_m, State& star
            createFootprint(_footprint_min.get(), _footprint_max.get(), start.mFootprintRadius);
            break;
         }
-    }       
+    }
 }
 
-base::samples::RigidBodyState Test::createPose(int width_m, int height_m, 
+base::samples::RigidBodyState Test::createPose(int width_m, int height_m,
         int x_m, int y_m, double theta_degree) {
     base::samples::RigidBodyState rbs;
-    
+
     rbs.position = base::Vector3d(x_m % width_m, y_m % height_m, 0);
-    
+
     // Create an angle in radians from -179 to 180 (required by OMPL)
     while(theta_degree >= 180) {
         theta_degree -= 360;
@@ -347,23 +348,23 @@ base::samples::RigidBodyState Test::createPose(int width_m, int height_m,
     double rot_radians = (theta_degree / 180.0) * M_PI;
     std::cout << "Rot radians " << rot_radians << std::endl;
     rbs.orientation = Eigen::AngleAxis<double>(rot_radians, base::Vector3d(0,0,1));
-    
+
     rbs.time = base::Time::now();
-    
+
     std::cout << "RBS POSITION X Y" << rbs.position.x() << " " << rbs.position.y() << std::endl;
-    
+
     return rbs;
 }
 
-void Test::drawCircle(envire::TraversabilityGrid* trav, unsigned int center_x, 
+void Test::drawCircle(envire::TraversabilityGrid* trav, unsigned int center_x,
         unsigned int center_y, int radius, int cost_class) {
-        
+
     envire::TraversabilityGrid::ArrayType& trav_array = trav->getGridData();
     int start_x = center_x - radius;
     int end_x = center_x + radius;
     int start_y = center_y - radius;
     int end_y = center_y + radius;
-    
+
     if(start_x < 0)
         start_x = 0;
     if(end_x > (int)trav->getCellSizeX())
@@ -372,7 +373,7 @@ void Test::drawCircle(envire::TraversabilityGrid* trav, unsigned int center_x,
         start_y = 0;
     if(end_y > (int)trav->getCellSizeY())
         end_y = trav->getCellSizeY();
-        
+
     for(int x=start_x; x < end_x; ++x) {
         for(int y=start_y; y < end_y; ++y) {
             if(dist(x,y,center_x,center_y) < radius) {
@@ -383,15 +384,15 @@ void Test::drawCircle(envire::TraversabilityGrid* trav, unsigned int center_x,
     }
 }
 
-void Test::drawRectangle(envire::TraversabilityGrid* trav, int lowerleft_x, int lowerleft_y, 
+void Test::drawRectangle(envire::TraversabilityGrid* trav, int lowerleft_x, int lowerleft_y,
         unsigned int width, unsigned int length, int cost_class) {
-       
-    envire::TraversabilityGrid::ArrayType& trav_array = trav->getGridData();    
+
+    envire::TraversabilityGrid::ArrayType& trav_array = trav->getGridData();
     int start_x = lowerleft_x;
     int end_x = lowerleft_x + width;
     int start_y = lowerleft_y;
     int end_y = lowerleft_y + length;
-     
+
     if(start_x < 0)
         start_x = 0;
     if(end_x > (int)trav->getCellSizeX())
@@ -400,9 +401,9 @@ void Test::drawRectangle(envire::TraversabilityGrid* trav, int lowerleft_x, int 
         start_y = 0;
     if(end_y > (int)trav->getCellSizeY())
         end_y = trav->getCellSizeY();
-        
+
     for(int x=start_x; x < end_x; ++x) {
-        for(int y=start_y; y < end_y; ++y) { 
+        for(int y=start_y; y < end_y; ++y) {
             trav_array[y][x] = cost_class;
             trav->setProbability(1.0, x, y);
         }

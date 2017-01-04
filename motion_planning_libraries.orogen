@@ -84,8 +84,8 @@ task_context "Task" do
             :START_GOAL_ON_OBSTACLE,
             :UNDEFINED_ERROR
         
-    #port_driven 'traversability_map', 'goal_pose_samples'
-    periodic 1.0
+    port_driven 'traversability_map', 'goal_pose_samples'
+    #periodic 1.0
 end
 
 task_context "Test" do

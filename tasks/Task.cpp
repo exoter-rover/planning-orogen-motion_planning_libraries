@@ -45,7 +45,7 @@ bool Task::startHook()
 void Task::updateHook()
 {
     TaskBase::updateHook();
-    
+    base::Time t0 = base::Time::now();
     // Set traversability map.
     envire::OrocosEmitter::Ptr binary_event;
     // Use a loop here because binary_events could contain partial updates
@@ -59,7 +59,6 @@ void Task::updateHook()
         mpMotionPlanningLibraries->setTravGrid(&mEnv, _traversability_map_id);
         // Just wait some time for a new goal pose in case both
         // map and new goal have been sent together.
-        sleep(1);
     }
      
     // Set start state / pose. 
@@ -95,6 +94,9 @@ void Task::updateHook()
     }
 
     double cost = 0.0;
+    std::vector <base::Waypoint > path;
+    path.clear();
+
     if(!mpMotionPlanningLibraries->plan(_planning_time_sec, cost)) {
         enum MplErrors err = mpMotionPlanningLibraries->getError();
         if(err != MPL_ERR_NONE && err != MPL_ERR_REPLANNING_NOT_REQUIRED) {
@@ -124,6 +126,7 @@ void Task::updateHook()
         if(err != MPL_ERR_NONE && err != MPL_ERR_REPLANNING_NOT_REQUIRED) {
             std::vector<base::Trajectory> empty_trajectories;
             _trajectory.write(empty_trajectories);
+            _waypoints.write(path);
         }
         
         if(err == MPL_ERR_START_ON_OBSTACLE || err == MPL_ERR_START_GOAL_ON_OBSTACLE) {
@@ -138,7 +141,7 @@ void Task::updateHook()
         state(RUNNING);
        
         // Compare new and old path and just publish and print path if its new.
-        std::vector <base::Waypoint > path = mpMotionPlanningLibraries->getPathInWorld();
+        path = mpMotionPlanningLibraries->getPathInWorld();
         
         bool new_path = false;
         if(path.size() != mLastPath.size()) {
@@ -171,6 +174,8 @@ void Task::updateHook()
             
             _path_cost.write(cost);
         }
+        base::Time t1 = base::Time::now();
+        std::cout << "Time: Planner update hook executed in " << (t1-t0).toMilliseconds() << "ms." << std::endl;
     }
     
     // Export automatically generated SBPL motion primitives.
